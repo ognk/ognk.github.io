@@ -12,12 +12,7 @@
       `);
 
       button.on('hover:enter', () => {
-        // Используем современный метод навигации
-        Lampa.Activity.push({
-          url: 'https://anilib.me',
-          title: 'Anilib',
-          component: 'browser'
-        });
+        window.open('https://anilib.me'); // Открываем в браузере
       });
 
       $('.menu .menu__list').first().append(button);
