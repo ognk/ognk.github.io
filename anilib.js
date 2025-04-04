@@ -1,139 +1,108 @@
-(function() {
+(function () {
     'use strict';
 
-    const AnimeLibParser = {
-        name: 'animelib_parser',
-        base_url: 'https://anilib.me',
-        selectors: {
-            search: '.search-results .anime-item',
-            title: '#anime-title',
-            episodes: '.episodes-list li',
-            player: '#video-player iframe'
-        },
+    // Конфигурация
+    const ANIMELIB_URL = 'https://animelib.me';
+    const MENU_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FF6B6B">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+    </svg>`;
 
-        init() {
-            lampa.plugins.add({
-                name: this.name,
-                version: '1.0',
-                init: () => {
-                    this.registerSource();
-                }
-            });
-        },
-
-        registerSource() {
-            lampa.sources.add({
-                name: 'animelib',
-                title: 'AnimeLib (HTML Parser)',
-                icon: `${this.base_url}/favicon.ico`,
-
-                // Поиск аниме
-                search: async (query) => {
-                    const html = await this.fetchPage('/search', { q: query });
-                    return this.parseSearchResults(html);
-                },
-
-                // Получение информации о тайтле
-                get: async (id) => {
-                    const html = await this.fetchPage(`/anime/${id}`);
-                    return this.parseTitlePage(html);
-                },
-
-                // Получение эпизодов
-                files: async (id) => {
-                    const html = await this.fetchPage(`/anime/${id}`);
-                    return this.parseEpisodes(html);
-                },
-
-                // Получение ссылки на видео
-                file: async (episodeId) => {
-                    const html = await this.fetchPage(
-                        `/anime/watch?episode=${episodeId}`
-                    );
-                    return this.parseVideo(html);
-                }
-            });
-        },
-
-        async fetchPage(path, params = {}) {
-            const url = new URL(`${this.base_url}${path}`);
-            Object.entries(params).forEach(([k, v]) => 
-                url.searchParams.append(k, v));
-
-            return lampa.request.text(url.toString(), {
-                headers: {
-                    'User-Agent': 'Lampa/AnimelibParser',
-                    'Referer': this.base_url
-                }
-            });
-        },
-
-        parseSearchResults(html) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            return Array.from(doc.querySelectorAll(this.selectors.search))
-                .map(item => ({
-                    id: item.dataset.id,
-                    title: item.querySelector('.title').textContent,
-                    year: item.querySelector('.year').textContent,
-                    poster: item.querySelector('img').src
-                }));
-        },
-
-        parseTitlePage(html) {
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            
-            return {
-                title: doc.querySelector(this.selectors.title).textContent,
-                description: doc.querySelector('.description').textContent,
-                poster: doc.querySelector('.poster img').src,
-                genres: Array.from(doc.querySelectorAll('.genres li'))
-                    .map(li => li.textContent)
-            };
-        },
-
-        parseEpisodes(html) {
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            
-            return Array.from(doc.querySelectorAll(this.selectors.episodes))
-                .map(ep => ({
-                    id: ep.dataset.episodeId,
-                    number: ep.querySelector('.ep-num').textContent,
-                    title: ep.querySelector('.ep-title').textContent
-                }));
-        },
-
-        parseVideo(html) {
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            const iframe = doc.querySelector(this.selectors.player);
-            const src = iframe ? iframe.src : '';
-            
-            // Извлекаем прямую ссылку из iframe
-            const videoUrl = this.extractVideoUrl(src);
-            
-            return {
-                url: videoUrl,
-                quality: this.detectQuality(videoUrl)
-            };
-        },
-
-        extractVideoUrl(iframeSrc) {
-            // Парсим URL вида:
-            // https://anilib.me/player/?video=cd087ee9-00eb-4eba-b587-553d853e3e3a_1080
-            const match = iframeSrc.match(/video=([^&]+)/);
-            return match ? 
-                `https://video1.anilib.me/${match[1]}.mp4` : 
-                null;
-        },
-
-        detectQuality(url) {
-            const res = url.match(/_(\d+p)/);
-            return res ? res[1] : 'HD';
+    // Главный компонент
+    class AnimelibComponent {
+        constructor(params) {
+            this.params = params;
+            this.initComponents();
         }
-    };
 
-    if(!window.animelib_parser) {
-        window.animelib_parser = new AnimeLibParser().init();
+        initComponents() {
+            this.scroll = new Lampa.Scroll({mask: true});
+            this.html = $('<div class="animelib-container"></div>');
+            this.menu = this.createMenu();
+        }
+
+        createMenu() {
+            return $(`
+                <div class="animelib-menu">
+                    <div class="selector" data-action="browser">
+                        <div class="animelib-ico">${MENU_ICON}</div>
+                        <div class="animelib-text">Открыть браузер</div>
+                    </div>
+                </div>
+            `);
+        }
+
+        start() {
+            this.bindEvents();
+            this.html.append(this.menu);
+            this.html.append(this.scroll.render());
+            return this.html;
+        }
+
+        bindEvents() {
+            this.menu.find('[data-action="browser"]').on('hover:enter', () => {
+                Lampa.Browser.show({
+                    url: ANIMELIB_URL,
+                    title: 'Animelib.me',
+                    width: '90%',
+                    height: '80%',
+                    template: 'default',
+                    onBack: () => this.handleBack()
+                });
+            });
+        }
+
+        handleBack() {
+            Lampa.Controller.toggle('content');
+            this.destroy();
+        }
+
+        pause() {}
+        stop() {}
+        destroy() {
+            this.scroll.destroy();
+            this.html.remove();
+        }
+    }
+
+    // Инициализация плагина
+    function initPlugin() {
+        // Регистрация компонента
+        Lampa.Component.add('Animelib', AnimelibComponent);
+
+        // Добавление в главное меню
+        Lampa.MenuMain.add('animelib', {
+            name: 'Animelib',
+            component: AnimelibComponent,
+            params: {},
+            position: 5
+        });
+
+        // Стилизация
+        Lampa.Template.add('Animelib-Styles', `
+            .animelib-container {
+                padding: 20px;
+                background: rgba(0, 0, 0, 0.95);
+            }
+            .animelib-menu {
+                margin-bottom: 30px;
+            }
+            .animelib-ico {
+                width: 24px;
+                height: 24px;
+                margin-right: 15px;
+            }
+            .animelib-text {
+                font-size: 1.2em;
+                color: #FF6B6B;
+            }
+        `);
+
+        $('body').append(Lampa.Template.get('Animelib-Styles'));
+    }
+
+    // Запуск
+    if (!window.animelib_plugin) {
+        initPlugin();
+        window.animelib_plugin = true;
     }
 })();
