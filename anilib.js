@@ -2,8 +2,8 @@ class AnimelibComponent {
     constructor() {
         // Инициализация параметров
         this.browserConfig = {
-            url: 'https://animelib.me',
-            title: 'Animelib.me',
+            url: 'https://anilib.me',
+            title: 'Anilib.me',
             width: '85vw',
             height: '80vh',
             onBack: this.handleBrowserClose.bind(this)
