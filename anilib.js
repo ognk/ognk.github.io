@@ -1,47 +1,41 @@
-(function() {
-  'use strict';
+class AnimelibComponent {
+    constructor() {
+        // Инициализация параметров
+        this.browserConfig = {
+            url: 'https://animelib.me',
+            title: 'Animelib.me',
+            width: '85vw',
+            height: '80vh',
+            onBack: this.handleBrowserClose.bind(this)
+        };
+    }
 
-  // Инициализация плагина
-  function startPlugin() {
-    // Добавляем пункт меню
-    Lampa.Menu.add('anilib_browser', {
-      title: 'Anilib',
-      icon: 'https://anilib.me/favicon.ico',
-      page: function() {
-        // Создаем WebView
-        const webview = new Lampa.WebView({
-          url: 'https://anilib.me',
-          title: 'Anilib',
-          userAgent: 'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
-          settings: {
-            javascript: true,
-            dom_storage: true,
-            load_images: true,
-            mixed_content: true
-          }
+    // Обязательный метод для Activity
+    start() {
+        this.openBrowser();
+        return this.render();
+    }
+
+    // Остальные методы
+    handleBrowserClose() {
+        Lampa.Controller.toggle('content');
+    }
+
+    openBrowser() {
+        Lampa.Browser.show(this.browserConfig);
+        Lampa.Controller.add('browser', {
+            back: this.handleBrowserClose,
+            up: () => Navigator.move('up'),
+            down: () => Navigator.move('down')
         });
+    }
 
-        // Обработка нажатия Back
-        webview.on('back', () => {
-          if (webview.canGoBack()) webview.goBack();
-          else Lampa.Activity.backward();
-        });
+    render() {
+        return $('<div class="animelib-wrapper"></div>');
+    }
 
-        // Блокировка внешних доменов
-        webview.on('load', (url) => {
-          if (!url.includes('anilib.me')) webview.stopLoading();
-        });
-
-        // Добавляем WebView на страницу
-        this.activity.loader(false);
-        this.activity.append(webview.render());
-      }
-    });
-  }
-
-  // Запуск плагина
-  if (!window.anilib_browser_plugin) {
-    startPlugin();
-    window.anilib_browser_plugin = true;
-  }
-})();
+    // Дополнительные методы жизненного цикла
+    pause() {}
+    stop() {}
+    destroy() {}
+}
