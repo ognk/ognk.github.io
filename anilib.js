@@ -15,8 +15,9 @@
   }
 
   // Основной компонент
-  function AnilibComponent() {
+  function AnilibComponent(object) {
     this.initialize = function() {
+      // Инициализация WebView
       const webview = new Lampa.WebView({
         url: Defined.localhost,
         title: 'Anilib',
@@ -29,6 +30,7 @@
         }
       });
 
+      // Обработка навигации
       webview.on('back', () => {
         if (webview.canGoBack()) webview.goBack();
         else Lampa.Activity.backward();
@@ -38,6 +40,7 @@
         if (!url.includes(Defined.localhost)) webview.stopLoading();
       });
 
+      // Добавление WebView в интерфейс
       this.activity.loader(false);
       this.activity.append(webview.render());
     };
@@ -46,7 +49,9 @@
       return $('<div></div>');
     };
 
-    this.destroy = function() {};
+    this.destroy = function() {
+      // Очистка ресурсов
+    };
   }
 
   // Инициализация плагина
@@ -54,43 +59,36 @@
     if (window.anilib_plugin_ready) return;
     window.anilib_plugin_ready = true;
 
-    // Регистрация в манифесте
-    Lampa.Manifest.plugins = {
-      type: 'video',
-      version: '1.0',
-      name: 'Anilib Browser',
-      description: 'Оптимизированный браузер для anilib.me',
-      component: 'anilib',
-      onContextMenu: function() {
-        return {
-          name: 'Anilib',
-          description: 'Просмотр аниме через Anilib.me'
-        };
+    // Регистрация компонента
+    Lampa.Component.add('anilib', AnilibComponent);
+
+    // Локализация
+    Lampa.Lang.add({
+      anilib_title: {
+        ru: 'Anilib',
+        en: 'Anilib',
+        uk: 'Anilib'
       },
-      onContextLauch: function() {
-        Lampa.Activity.push({
-          title: 'Anilib',
-          component: 'anilib'
-        });
+      anilib_description: {
+        ru: 'Просмотр аниме через Anilib.me',
+        en: 'Watch anime via Anilib.me',
+        uk: 'Перегляд аніме через Anilib.me'
       }
-    };
+    });
 
     // Добавление кнопки в карточку медиа
     Lampa.Listener.follow('full', (e) => {
       if (e.type === 'complite') {
         const btn = $(`
           <div class="full-start__button selector view--anilib">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-              <path d="M10 16.5l6-4.5-6-4.5v9z"/>
-            </svg>
-            <span>Anilib</span>
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M10 16.5l6-4.5-6-4.5v9z"/></svg>
+            <span>#{anilib_title}</span>
           </div>
         `);
 
         btn.on('hover:enter', () => {
           Lampa.Activity.push({
-            title: 'Anilib',
+            title: Lampa.Lang.translate('anilib_title'),
             component: 'anilib'
           });
         });
@@ -99,8 +97,26 @@
       }
     });
 
-    // Регистрация компонента
-    Lampa.Component.add('anilib', AnilibComponent);
+    // Регистрация в манифесте
+    Lampa.Manifest.plugins = {
+      type: 'video',
+      version: '1.0',
+      name: 'Anilib Browser',
+      description: 'Оптимизированный браузер для anilib.me',
+      component: 'anilib',
+      onContextMenu: function(object) {
+        return {
+          name: Lampa.Lang.translate('anilib_title'),
+          description: Lampa.Lang.translate('anilib_description')
+        };
+      },
+      onContextLauch: function(object) {
+        Lampa.Activity.push({
+          title: Lampa.Lang.translate('anilib_title'),
+          component: 'anilib'
+        });
+      }
+    };
   }
 
   // Запуск при готовности приложения
