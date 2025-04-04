@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="Assets/css/style.css">
+    <title>Карточка</title>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="#">Вакансии</a>
+            <input type="search" placeholder="Поиск по вакансиям">
+            <a href="#">Зарплаты</a>
+            <a href="#">Компания</a>
+            <a href="#">Блог</a>
+            <a href="#">Новости</a>
+            <a href="#" id="calendarButton">Календарь</a>
+            <div id="customCalendar" style="display: none;">
+                <div id="calendarHeader">
+                    <h3>Архив</h3>
+                    <div id="monthYearContainer">
+                        <span id="prevMonth" class="arrow">&#9664;</span>
+                        <span id="monthYearText"></span>
+                        <span id="nextMonth" class="arrow">&#9654;</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <script>
+        document.getElementById('calendarButton').addEventListener('click', function(event) {
+            event.preventDefault();
+            var calendar = document.getElementById('customCalendar');
+            if (calendar.style.display === 'none') {
+                calendar.style.display = 'block';
+                generateCalendar();
+            } else {
+                calendar.style.display = 'none';
+            }
+        });
+
+        var currentMonth = new Date().getMonth();
+        var currentYear = new Date().getFullYear();
+
+        function generateCalendar() {
+            var calendar = document.getElementById('customCalendar');
+            calendar.innerHTML = '<div id="calendarHeader"><h3>Архив</h3><div id="monthYearContainer"><span id="prevMonth" class="arrow">&#9664;</span><span id="monthYearText"></span><span id="nextMonth" class="arrow">&#9654;</span></div></div>';
+
+            var monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+            document.getElementById('monthYearText').innerText = monthNames[currentMonth] + ' ' + currentYear;
+
+            var daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            var table = document.createElement('table');
+            var row = document.createElement('tr');
+
+            var today = new Date();
+            var isCurrentMonth = (today.getMonth() === currentMonth && today.getFullYear() === currentYear);
+
+            for (var day = 1; day <= daysInMonth; day++) {
+                if ((day - 1) % 7 === 0 && day !== 1) {
+                    table.appendChild(row);
+                    row = document.createElement('tr');
+                }
+                var cell = document.createElement('td');
+                cell.innerText = day;
+                
+                // Highlight today's date
+                if (isCurrentMonth && day === today.getDate()) {
+                    cell.classList.add('current-day');
+                }
+
+                row.appendChild(cell);
+            }
+            table.appendChild(row);
+            calendar.appendChild(table);
+
+            document.getElementById('prevMonth').addEventListener('click', function() {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                generateCalendar();
+            });
+
+            document.getElementById('nextMonth').addEventListener('click', function() {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                generateCalendar();
+            });
+        }
+    </script>
+    <div class="main"> 
+        <section>
+            <div class="heading">Постановка задачи
+                <div class="subheading">Выбор метода решения
+                    <div class="paragraph">Встряхнув головой, он подумал: нет, всё это не так-то просто раскрутить; надо <span>тщательно</span>, кропотливо — скопить все вопросы, требующие ответа, а затем докапатсья до истины. Все должно быть по науке. Всему свой резон.</div> 
+                </div>
+            </div>
+            <a href="#">www.itmathrepetitor.ru</a>
+        </section>
+    </div>
+</body>
+</html>
